@@ -1,4 +1,7 @@
 #!/usr/bin/env python3
+
+# This file holds the main interface for the whole parser
+
 import os
 import sys
 import escf
@@ -15,7 +18,9 @@ USAGE: turboparse [escf/ricc2] PATH NUM [-m] [-v]
 
 PATH: Path of a list file, quoted if contain spaces and special characters
       The list file should contain:
-        - Path of escf.out's,
+        - Path of folders containing:
+            - escf : escf.out,
+            - ricc2: ricc2.out and spectrum
         - NAME
       One line for each file, parameters comma separated
 NUM : Number of excitations
@@ -26,31 +31,27 @@ Result is always in folder of PATH, as PATH.csv
 """
 
 
-# Main thing
-def main():
+# Parse arguments from stdin
+def parse_args():
     mo_parse = False
     verbose = False
-
     # Arguments:
     #   0 : './py', not useful
     #   1 : Function (escf/ricc2)
     #   2 : PATH
     #   3 : NUM of excited states
     #   4+: Optional arguments
-
     # At least 4 arguments needed
     if len(sys.argv) > 3:
         func = sys.argv[1]
-
         # Check argv[1], should be 'escf' or 'ricc2'
         if func in METHODS:
             path = sys.argv[2]
-
             # Check the existence of a file at PATH
             if os.path.isfile(path):
                 # Parse file at PATH
                 parsee = {}
-                with open(path, 'r') as f:
+                with open(path) as f:
                     for line in f:
                         if line:
                             path_line = [s.strip() for s in line.split(',')]
@@ -61,7 +62,7 @@ def main():
                                 print(HELP)
                                 sys.exit()
                 try:
-                    num_of_excited = int(sys.argv[3])
+                    num_of_excited = int(sys.argv[3]) + 1
                 except ValueError:
                     print('Number of excitation not a number!')
                 else:
@@ -72,22 +73,35 @@ def main():
                     if '-v' in args:
                         verbose = True
                         args.remove('-v')
-                    if len(args):
-                        print('Invalid optional arguments!')
-                    else:
-                        # success = METHODS[func](parsee, num_of_excited,
-                        #                         mo_parse, verbose)
-                        # if success:
-                        #     sys.exit('Successfully extracted!')
-                        # else:
-                        #     sys.exit('Parser has encountered an error!')
-                        sys.exit(METHODS[func])     # DEBUG: No actual use
+                    if not len(args):
+                        return [path, func, parsee, num_of_excited, mo_parse,
+                                verbose]
+                    print('Invalid optional arguments!')
             else:
                 print('No file at {}!'.format(path))
         else:
             print('Improper method!')
     else:
         print('Invalid arguments!')
+    return False
+
+
+# Main thing
+def main():
+    args = parse_args()
+    # Check if argument parsing is successful
+    if args:
+        # cd to list for relative path
+        os.chdir(os.path.dirname(args.pop(0)))
+        # Check parsing result
+        success = METHODS[args.pop(0)](*args)
+        if success:
+            csv = [('Name,Lambda max (nm),Energy (eV),MO Number,'
+                    'Oscilator Strength (length),Contribution (%)')]
+            print('Successfully extracted!')
+        else:
+            print('Parser has encountered an error!')
+        return
     print(HELP)
 
 
