@@ -3,22 +3,6 @@ import os
 import sys
 import re
 
-HELP = """
-USAGE:  python3 escf.py -o/-l $PATH $NUM -v
-
--o PATH: Path of escf.out
--l PATH: Path of a list file
-         The list file should contain:
-           - Path of escf.out's,
-           - NAME
-         One line for each file, parameters space separated
-NUM    : Number of excitations
--v     : Verbose
-
-Result is always in folder of $PATH, as $PATH.csv
-"""
-
-
 def process_file(file, num, verbose):
     if os.path.isfile(file):
         with open(file, 'r') as rf:
@@ -94,6 +78,10 @@ def process_file(file, num, verbose):
     else:
         print('Incorrect file path!')
         print(HELP)
+
+
+def escf(path, num_of_excited, mo_parse, verbose):
+    pass
 
 
 def main():

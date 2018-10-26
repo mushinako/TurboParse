@@ -134,6 +134,10 @@ def process_file(folder, num, verbose):
         return False
 
 
+def ricc2(path, num_of_excited, mo_parse, verbose):
+    pass
+
+
 def main():
     if len(sys.argv) in [4, 5]:
         verbose = False
