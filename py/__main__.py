@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+
 # This file holds the main interface for the whole parser
+
 import os
 import sys
 import escf
@@ -90,19 +92,13 @@ def main():
     # Check if argument parsing is successful
     if args:
         # cd to list for relative path
-        path, file = os.path.split(args.pop(0))
-        os.chdir(path)
+        os.chdir(os.path.dirname(args.pop(0)))
         # Check parsing result
         success = METHODS[args.pop(0)](*args)
         if success:
-            file = os.path.splitext(file)[0]
-            if args[-2]:
-                file += '-mo'
-            csv = file + '.csv'
-            with open(csv, 'w') as f:
-                f.write('\n'.join(success))
-            if args[-1]:
-                print('Successfully extracted and written to', csv + '!')
+            csv = [('Name,Lambda max (nm),Energy (eV),MO Number,'
+                    'Oscilator Strength (length),Contribution (%)')]
+            print('Successfully extracted!')
         else:
             print('Parser has encountered an error!')
         return
