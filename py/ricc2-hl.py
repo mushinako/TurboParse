@@ -84,14 +84,12 @@ def process_file(folder, num, verbose):
                     if len(x) and not x.isspace():
                         x = x.partition('|')[2].strip()
                         re_moi = re.compile('^(\d+)\s')
-                        moi = re_moi.search(x).group(1)
+                        moi = int(re_moi.search(x).group(1))
 
                         x = x.partition('|')[2].strip()
                         re_mof = re.compile('^(\d+)\s')
 
-                        mo_trans = (
-                            re_mof.search(x).group(1) + '←' + moi
-                            )
+                        mo_trans = [int(re_mof.search(x).group(1)), moi]
 
                         x = (x.strip()[:-1]).strip()
                         re_coef = re.compile('\s(\d+\.\d+)$')
@@ -104,8 +102,53 @@ def process_file(folder, num, verbose):
                         tmp_mo_trans.append(mo_trans)
                         tmp_coeff.append(coef)
 
-                l_mo_trans.append((' ' * 5).join(tmp_mo_trans))
-                l_coeff.append((' ' * 5).join(tmp_coeff))
+                l_mo_trans.append(tmp_mo_trans)
+                l_coeff.append(tmp_coeff)
+
+            tmp_spectrum = [float(x) for x in data_spectrum]
+            hl_index = tmp_spectrum.index(max(tmp_spectrum))
+            lumo, homo = l_mo_trans[hl_index][0]
+            if lumo - homo != 1:
+                print(data_spectrum)
+                print(hl_index)
+                print(l_mo_trans)
+                sys.exit('HOMO-LUMO Parsing Error')
+
+            ll_mo_trans = []
+
+            print('%4d %4d' % (homo, lumo), end='')
+
+            for i in range(num):
+                state_trans = l_mo_trans[i]
+                tmp_state_trans = []
+
+                for j in range(len(state_trans)):
+                    mo_trans = state_trans[j]
+                    tmp_mo_trans = ''
+
+                    mo = mo_trans[0]
+                    if mo > lumo:
+                        tmp_mo_trans += 'L+{}'.format(mo-lumo)
+                    elif mo < lumo:
+                        tmp_mo_trans += 'L-{}'.format(lumo-mo)
+                    else:
+                        tmp_mo_trans += '    L'
+
+                    tmp_mo_trans += '←'
+
+                    mo = mo_trans[1]
+                    if mo < homo:
+                        tmp_mo_trans += 'H-{}'.format(homo-mo)
+                    elif mo > homo:
+                        tmp_mo_trans += 'H+{}'.format(mo-homo)
+                    else:
+                        tmp_mo_trans += 'H   '
+
+                    tmp_state_trans.append(
+                        tmp_mo_trans + '  ({}%)'.format(l_coeff[i][j])
+                        )
+
+                ll_mo_trans.append('      '.join(tmp_state_trans))
 
             if verbose:
                 print()
@@ -114,13 +157,12 @@ def process_file(folder, num, verbose):
                 print('  ev:', evs)
                 print('  nm:', nms)
                 print('  leng:', data_spectrum)
-                print('  mo_trans:', l_mo_trans)
-                print('  coeff:', l_coeff)
+                print('  mo_trans & coeff:', ll_mo_trans)
 
             return [
                 ','.join(x)
-                for x in zip(s0s, nms, evs, l_mo_trans, data_spectrum, l_coeff)
-            ]
+                for x in zip(s0s, nms, evs, ll_mo_trans, data_spectrum)
+                ]
 
         else:
             print('Necessary files do not present in the folder {}!'.format(
@@ -132,10 +174,6 @@ def process_file(folder, num, verbose):
         print('Incorrect folder path!')
         print(HELP)
         return False
-
-
-def ricc2(path, num_of_excited, mo_parse, verbose):
-    pass
 
 
 def main():
@@ -156,32 +194,33 @@ def main():
             return
 
         if sys.argv[1] == '-o':
+            print('HOMO LUMO')
             csv = [
                 ('S0-Energy,'
                  'Lambda max (nm),'
                  'Energy (eV),'
-                 'MO Number,'
-                 'Oscilator Strength (length),'
-                 'Contribution (%)')
+                 'Decomposition,'
+                 'Oscilator Strength (length)')
                  ]
             folder = sys.argv[2]
             p = process_file(folder, num, verbose)
+            print()
             if not p:
                 sys.exit()
             csv += p
 
-            with open(folder + '/data.csv', 'w') as f:
+            with open(folder + '/data-hl.csv', 'w') as f:
                 f.write('\n'.join(csv))
 
         elif sys.argv[1] == '-l':
+            print('HOMO LUMO')
             csv = [
-                ('S0-Energy,'
-                 'Name,'
+                ('Name,'
+                 'S0-Energy,'
                  'Lambda max (nm),'
                  'Energy (eV),'
-                 'MO Number,'
-                 'Oscilator Strength (length),'
-                 'Contribution (%)')
+                 'Decomposition,'
+                 'Oscilator Strength (length)')
                  ]
             file_list = sys.argv[2]
 
@@ -197,11 +236,12 @@ def main():
                             return
                         file, name = x
                         p = process_file(file, num, verbose)
+                        print('  ', name)
                         if not p:
                             sys.exit()
                         csv += [name + ',' + x for x in p]
 
-                with open(file_list + '.csv', 'w') as wf:
+                with open(file_list + '-hl.csv', 'w') as wf:
                     wf.write('\n'.join(csv))
 
         else:
