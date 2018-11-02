@@ -2,14 +2,12 @@
 # This file holds the main interface for the whole parser
 import os
 import sys
+import argparse
 import escf
 import ricc2
 
 
-METHODS = {
-    'escf': escf.escf,
-    'ricc2': ricc2.ricc2
-    }
+METHODS = ['escf', 'ricc2']
 
 HELP = """
 USAGE: turboparse [escf/ricc2] PATH NUM [-m] [-v]
@@ -29,77 +27,65 @@ Result is always in folder of PATH, as PATH.csv
 """
 
 
+# Check list file
+def is_list_file(parser, path):
+    if os.path.isfile(path):
+        parsee = {}
+        with open(path) as f:
+            for line in f:
+                if line:
+                    path_line = [s.strip() for s in line.split(',')]
+                    if len(path_line) == 2:
+                        parsee[path_line[1]] = path_line[0]
+                    else:
+                        parser.error('List file format error!')
+        return [path, parsee]
+    parser.error('No file at {}!'.format(path))
+
+
 # Parse arguments from stdin
 def parse_args():
-    mo_parse = False
-    verbose = False
+    # A quirk for WSL
+    args = sys.argv[1:]
+    args[-1] = args[-1].replace('\r', '')
     # Arguments:
-    #   0 : './py', not useful
-    #   1 : Function (escf/ricc2)
-    #   2 : PATH
-    #   3 : NUM of excited states
-    #   4+: Optional arguments
-    # At least 4 arguments needed
-    if len(sys.argv) > 3:
-        func = sys.argv[1]
-        # Check argv[1], should be 'escf' or 'ricc2'
-        if func in METHODS:
-            path = sys.argv[2]
-            # Check the existence of a file at PATH
-            if os.path.isfile(path):
-                # Parse file at PATH
-                parsee = {}
-                with open(path) as f:
-                    for line in f:
-                        if line:
-                            path_line = [s.strip() for s in line.split(',')]
-                            if len(path_line) == 2:
-                                parsee[path_line[1]] = path_line[0]
-                            else:
-                                print('List file format error!')
-                                print(HELP)
-                                sys.exit()
-                try:
-                    num_of_excited = int(sys.argv[3]) + 1
-                except ValueError:
-                    print('Number of excitation not a number!')
-                else:
-                    args = sys.argv[4:]
-                    if '-m' in args:
-                        mo_parse = True
-                        args.remove('-m')
-                    if '-v' in args:
-                        verbose = True
-                        args.remove('-v')
-                    if not len(args):
-                        return [path, func, parsee, num_of_excited, mo_parse,
-                                verbose]
-                    print('Invalid optional arguments!')
-            else:
-                print('No file at {}!'.format(path))
-        else:
-            print('Improper method!')
-    else:
-        print('Invalid arguments!')
-    return False
+    #   Function (escf/ricc2)
+    #   PATH
+    #   NUM of excited states
+    #   Optional arguments
+    parser = argparse.ArgumentParser(description='Parse TURBOMOLE(TM) outputs')
+    parser.add_argument('func', metavar='METHOD', choices=METHODS,
+                        help='Method to parse')
+    parser.add_argument('parsee', metavar='PATH', help='Path of list file',
+                        type=lambda x: is_list_file(parser, x))
+    parser.add_argument('num_of_excited', metavar='NUM', type=int,
+                        help='Number of excited states to parse')
+    parser.add_argument('-m', action='store_true', dest='mo_parse',
+                        help='Parse HOMO-LUMO orbitals')
+    parser.add_argument('-v', action='store_true', dest='verbose',
+                        help='Verbose')
+    return parser.parse_args(args)
 
 
 # Main parsing function
-def parse_main(method, parsee, num_of_excited, mo_parse, verbose):
+def parse_main(func, parsee, num_of_excited, mo_parse, verbose):
     data = [('Name,Ground energy,Lambda max (nm),Energy (eV),Decomposition,'
              'Oscilator Strength (length)')]
     for name, path in sorted(parsee.items()):
         if verbose:
             print('\nCurrently parsing', name + '...')
         if os.path.isdir(path):
+            parse_func = getattr(__import__(func), func)
             try:
-                prsd = METHODS[method](path, num_of_excited, mo_parse, verbose)
+                prsd = parse_func(path, num_of_excited,
+                                                 mo_parse, verbose)
             except Exception as e:
                 print('An error occured!')
                 print(e)
             else:
                 if prsd:
-                    data += [','.join(x) for x in zip([name] * len(prsd[0]), *prsd)]
+                    data += [','.join(x)
+                             for x in zip([name] * len(prsd[0]), *prsd)]
                     continue
             print('Parsing error for', path)
         else:
@@ -111,26 +97,23 @@ def parse_main(method, parsee, num_of_excited, mo_parse, verbose):
 # Main thing
 def main():
     args = parse_args()
-    # Check if argument parsing is successful
-    if args:
-        # cd to list for relative path
-        path, file = os.path.split(args.pop(0))
-        os.chdir(path)
-        # Check parsing result
-        success = parse_main(*args)
-        if success:
-            file = os.path.splitext(file)[0]
-            if args[-2]:
-                file += '-mo'
-            csv = file + '.csv'
-            with open(csv, 'w') as f:
-                f.write('\n'.join(success))
-            if args[-1]:
-                print('Successfully extracted and written to', csv + '!')
-        else:
-            print('Parser has encountered an error!')
-        return
-    print(HELP)
+    # cd to list for relative path
+    file_path, args.parsee = args.parsee
+    path, file = os.path.split(file_path)
+    os.chdir(path)
+    # Check parsing result
+    success = parse_main(**vars(args))
+    if success:
+        file = os.path.splitext(file)[0]
+        if args.mo_parse:
+            file += '-mo'
+        csv = file + '.csv'
+        with open(csv, 'w') as f:
+            f.write('\n'.join(success))
+        print('Data successfully extracted and written to', csv + '!')
+    else:
+        print('Parser has encountered an error!')
+    return
 
 
 if __name__ == '__main__':

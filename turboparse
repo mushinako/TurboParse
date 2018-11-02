@@ -1,2 +1,4 @@
 #!/usr/bin/env bash
 python3 ./py "$@"
+read -n 1 -s -r -p "Press any key to continue . . ."
+echo "" # "" due to the quirk of WSL
