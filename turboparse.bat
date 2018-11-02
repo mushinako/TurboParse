@@ -1,3 +1,3 @@
 @echo off
-py .\py %*
+py .\py3turboparse %*
 pause

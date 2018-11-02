@@ -6,25 +6,7 @@ import argparse
 import escf
 import ricc2
 
-
 METHODS = ['escf', 'ricc2']
-
-HELP = """
-USAGE: turboparse [escf/ricc2] PATH NUM [-m] [-v]
-
-PATH: Path of a list file, quoted if contain spaces and special characters
-      The list file should contain:
-        - Path of folders containing:
-            - escf : escf.out,
-            - ricc2: ricc2.out and spectrum
-        - NAME
-      One line for each file, parameters comma separated
-NUM : Number of excitations
--m  : Parse HOMO-LUMO orbitals
--v  : Verbose
-
-Result is always in folder of PATH, as PATH.csv
-"""
 
 
 # Check list file
@@ -55,15 +37,15 @@ def parse_args():
     #   Optional arguments
     parser = argparse.ArgumentParser(description='Parse TURBOMOLE(TM) outputs')
     parser.add_argument('func', metavar='METHOD', choices=METHODS,
-                        help='Method to parse')
-    parser.add_argument('parsee', metavar='PATH', help='Path of list file',
+                        help='method to parse')
+    parser.add_argument('parsee', metavar='PATH', help='path of list file',
                         type=lambda x: is_list_file(parser, x))
     parser.add_argument('num_of_excited', metavar='NUM', type=int,
-                        help='Number of excited states to parse')
+                        help='number of excited states to parse')
     parser.add_argument('-m', action='store_true', dest='mo_parse',
-                        help='Parse HOMO-LUMO orbitals')
+                        help='parse HOMO-LUMO orbitals')
     parser.add_argument('-v', action='store_true', dest='verbose',
-                        help='Verbose')
+                        help='verbose')
     return parser.parse_args(args)
 
 
