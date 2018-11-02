@@ -1,4 +1,4 @@
-# TM-Parser
+# TurboParse
 This is a parser designed for
 [TURBOMOLE™](http://www.cosmologic.de/turbomole/home.html) outputs to extract
 essential information, and output a CSV file.
