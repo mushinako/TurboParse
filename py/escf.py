@@ -13,7 +13,7 @@ def mo_data_2_lists(mo, mo_parse):
         y = x.strip()
         if len(y):
             # MO coefficient
-            tmp_coeff = const.re_deci_e.search(y).group(1)
+            tmp_coeff = const.re_udeci_e.search(y).group(1)
             if float(tmp_coeff) >= 10:
                 coeff.append(tmp_coeff)
                 # Initial MO
@@ -123,6 +123,7 @@ def excited(data, num_of_excited, mo_parse, verbose):
 
 # Actual escf main function
 def escf(path, num_of_excited, mo_parse, verbose):
+    # Read escf.out
     file = os.path.join(path, 'escf.out')
     if os.path.isfile(file):
         with open(file) as f:

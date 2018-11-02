@@ -92,10 +92,15 @@ def parse_main(method, parsee, num_of_excited, mo_parse, verbose):
         if verbose:
             print('\nCurrently parsing', name + '...')
         if os.path.isdir(path):
-            prsd = METHODS[method](path, num_of_excited, mo_parse, verbose)
-            if prsd:
-                data += [','.join(x) for x in zip([name] * len(prsd[0]), *prsd)]
-                continue
+            try:
+                prsd = METHODS[method](path, num_of_excited, mo_parse, verbose)
+            except Exception as e:
+                print('An error occured!')
+                print(e)
+            else:
+                if prsd:
+                    data += [','.join(x) for x in zip([name] * len(prsd[0]), *prsd)]
+                    continue
             print('Parsing error for', path)
         else:
             print('No folder', path + '!')
