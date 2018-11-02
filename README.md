@@ -25,7 +25,8 @@ For Windows users:
 ```
 turboparse [-h] [-m] [-v] METHOD PATH NUM
 ```
-- It is not recommended to use turboparse on WSL (#1).
+- It is not recommended to use turboparse on WSL (see
+  [#1](https://github.com/Mushinako/TurboParse/issues/1)).
 
 For Linux/macOS users:
 ```
