@@ -122,39 +122,20 @@ def excited(data, num_of_excited, mo_parse, verbose):
 
 
 # Actual escf main function
-def parse_escf(path, num_of_excited, mo_parse, verbose):
-    if os.path.isdir(path):
-        file = os.path.join(path, 'escf.out')
-        if os.path.isfile(file):
-            with open(file) as f:
-                data = f.read()
-            # Get ground state energy
-            data = data.partition('Ground')[2]
-            data = data.partition('Total')[2]
-            grnd = const.re_float.search(data).group(1)
-            if verbose:
-                print('  Ground energy:', grnd)
-            # Get excited state information
-            exct = excited(data, num_of_excited, mo_parse, verbose)
-            # Return ground energy and excited energy
-            return [[grnd] * len(exct[0])] + exct
-        print('No escf.out in folder', path + '!')
-    else:
-        print('No folder', path + '!')
-    return False
-
-
-# Main escf parsing function
-def escf(parsee, num_of_excited, mo_parse, verbose):
-    data = [('Name,Ground energy,Lambda max (nm),Energy (eV),Decomposition,'
-             'Oscilator Strength (length)')]
-    for name, path in sorted(parsee.items()):
+def escf(path, num_of_excited, mo_parse, verbose):
+    file = os.path.join(path, 'escf.out')
+    if os.path.isfile(file):
+        with open(file) as f:
+            data = f.read()
+        # Get ground state energy
+        data = data.partition('Ground')[2]
+        data = data.partition('Total')[2]
+        grnd = const.re_float.search(data).group(1)
         if verbose:
-            print('\nCurrently parsing', name + '...')
-        prsd = parse_escf(path, num_of_excited, mo_parse, verbose)
-        if prsd:
-            data += [','.join(x) for x in zip([name] * len(prsd[0]), *prsd)]
-            continue
-        print('Parsing error for', path)
-        return False
-    return data
+            print('  Ground energy:', grnd)
+        # Get excited state information
+        exct = excited(data, num_of_excited, mo_parse, verbose)
+        # Return ground energy and excited energy
+        return [[grnd] * len(exct[0])] + exct
+    print('No escf.out in folder', path + '!')
+    return False

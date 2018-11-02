@@ -84,6 +84,25 @@ def parse_args():
     return False
 
 
+# Main parsing function
+def parse_main(method, parsee, num_of_excited, mo_parse, verbose):
+    data = [('Name,Ground energy,Lambda max (nm),Energy (eV),Decomposition,'
+             'Oscilator Strength (length)')]
+    for name, path in sorted(parsee.items()):
+        if verbose:
+            print('\nCurrently parsing', name + '...')
+        if os.path.isdir(path):
+            prsd = METHODS[method](path, num_of_excited, mo_parse, verbose)
+            if prsd:
+                data += [','.join(x) for x in zip([name] * len(prsd[0]), *prsd)]
+                continue
+            print('Parsing error for', path)
+        else:
+            print('No folder', path + '!')
+        return False
+    return data
+
+
 # Main thing
 def main():
     args = parse_args()
@@ -93,7 +112,7 @@ def main():
         path, file = os.path.split(args.pop(0))
         os.chdir(path)
         # Check parsing result
-        success = METHODS[args.pop(0)](*args)
+        success = parse_main(*args)
         if success:
             file = os.path.splitext(file)[0]
             if args[-2]:
